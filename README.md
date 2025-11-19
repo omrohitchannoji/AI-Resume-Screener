@@ -46,9 +46,11 @@ This project provides a **complete AI pipeline for recruitment automation**:
 > View semantic score, found skills, missing skills, and insights.
 
 <p align="center">
-  <img src="screenshots/detailed_light.png" width="850">
+  <img src="screenshots/detailed_light1.png" width="850">
 </p>
-
+<p align="center">
+  <img src="screenshots/detailed_light2.png" width="850">
+</p>
 ---
 
 ### 📌 JD Keyword Extraction
