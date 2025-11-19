@@ -1,0 +1,9 @@
+streamlit
+sentence-transformers
+keybert
+pymupdf
+scikit-learn
+numpy
+pandas
+pdfminer.six
+rank-bm25
