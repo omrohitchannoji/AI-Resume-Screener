@@ -50,7 +50,7 @@ def compute_keyword_scores(
       found_keywords_all: Dict[str, List[str]]
       missing_keywords_all: Dict[str, List[str]]
     """
-    jd_keywords = extract_keywords_keybert(jd_text)
+    jd_keywords = extract_required_skills_from_jd(jd_text,skills_list)
 
     coverage_scores: Dict[str, float] = {}
     found_keywords_all: Dict[str, List[str]] = {}
@@ -66,3 +66,11 @@ def compute_keyword_scores(
         missing_keywords_all[name] = missing    # list[str]
 
     return jd_keywords, coverage_scores, found_keywords_all, missing_keywords_all
+
+def extract_required_skills_from_jd(jd_text:str, skills_list:List[str]) -> List[str]:
+    jd_text = jd_text.lower()
+    required = []
+    for skill in skills_list:
+        if skill.lower() in jd_text:
+            required.append(skill)
+    return list(set(required))        
