@@ -24,7 +24,7 @@ st.markdown("""
 
 /* Title */
 .title {
-    font-size: 500px;
+    font-size: 48px;
     font-weight: 900;
     text-align: center;
     background: linear-gradient(90deg,#f907fc,#05a6f0);
@@ -32,16 +32,6 @@ st.markdown("""
     color: transparent !important;
     margin-top: 10px;
     letter-spacing: -1px;
-}
-
-/* Glass Card */
-.card {
-    padding: 20px;
-    border-radius: 15px;
-    background: rgba(255,255,255,0.55);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.35);
-    box-shadow: 0px 6px 18px rgba(0,0,0,0.07);
 }
 
 /* Animated Button */
@@ -73,12 +63,10 @@ div.stButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-
 # ===================== HEADER =====================
 st.markdown('<p class="title">📄 AI Resume Screener</p>', unsafe_allow_html=True)
 st.write("### 🚀 Hire Smarter. Not Harder.")
-st.write("✨ Upload Resumes & a Job Description. Let AI rank candidates using NLP similarity + skill coverage.")
-
+st.write("Upload resumes and a job description. AI ranks candidates using **semantic similarity + skill coverage**.")
 
 # ===================== FILE INPUTS =====================
 st.markdown("---")
@@ -90,26 +78,33 @@ with col1:
 
 with col2:
     st.subheader("👨‍💻 Resume PDFs")
-    resume_files = st.file_uploader("Upload Resumes", type=["pdf"], accept_multiple_files=True)
+    resume_files = st.file_uploader(
+        "Upload Resumes",
+        type=["pdf"],
+        accept_multiple_files=True
+    )
 
-# ===================== SKILL INPUT =====================
+# ===================== SKILLS =====================
 st.markdown("### 🧠 Key Skills to Extract")
 DEFAULT_SKILLS = [
     "python", "sql", "machine learning", "deep learning",
-    "tensorflow", "pytorch", "sklearn", "nlp", "computer vision",
-    "aws", "azure", "gcp", "pandas", "numpy"
+    "tensorflow", "pytorch", "sklearn", "nlp",
+    "computer vision", "aws", "azure", "gcp",
+    "pandas", "numpy"
 ]
 
-skills_text = st.text_area("Edit skills (comma-separated):", value=", ".join(DEFAULT_SKILLS))
+skills_text = st.text_area(
+    "Edit skills (comma-separated):",
+    value=", ".join(DEFAULT_SKILLS)
+)
 skills_list = [s.strip().lower() for s in skills_text.split(",")]
 
-# Skill chips
 chip_html = "".join([f'<span class="chip">{skill}</span>' for skill in skills_list])
 st.markdown(chip_html, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# ===================== RUN BUTTON =====================
+# ===================== RUN =====================
 if st.button("🚀 Run Resume Screening"):
     if jd_file is None:
         st.error("⚠ Please upload a Job Description.")
@@ -120,16 +115,19 @@ if st.button("🚀 Run Resume Screening"):
             jd_text = load_job_description_pdf(jd_file)
             resume_texts = load_resumes(resume_files)
 
-        with st.spinner("🤖 Analyzing with NLP Model..."):
-            final_reports, jd_keywords = run_full_analysis(jd_text, resume_texts, skills_list)
+        with st.spinner("🤖 Running AI Analysis..."):
+            final_reports, jd_keywords = run_full_analysis(
+                jd_text,
+                resume_texts,
+                skills_list
+            )
             time.sleep(1)
 
         st.success("🎉 Analysis Completed!")
         st.balloons()
 
-
-        # ===================== KEYWORDS =====================
-        st.subheader("🔍 Extracted JD Keywords (AI Selected)")
+        # ===================== JD KEYWORDS =====================
+        st.subheader("🔍 Extracted JD Keywords")
         st.write(", ".join(jd_keywords))
         st.markdown("---")
 
@@ -137,27 +135,62 @@ if st.button("🚀 Run Resume Screening"):
         st.subheader("🏆 Final Resume Ranking")
 
         df = pd.DataFrame([{
+            "Rank": i + 1,
             "Resume": rep["name"],
             "Final Score": rep["final_score"],
             "Semantic Similarity": rep["semantic_similarity"],
             "Keyword Coverage": rep["keyword_coverage"]
-        } for rep in final_reports])
+        } for i, rep in enumerate(final_reports)])
 
-        st.dataframe(df.style.highlight_max(color="lightgreen", axis=0))
+        def add_badge(rank):
+            if rank == 1:
+                return "🥇 Best Match"
+            elif rank == 2:
+                return "🥈 Strong Match"
+            elif rank == 3:
+                return "🥉 Good Match"
+            else:
+                return ""
+
+        df["Recommendation"] = df["Rank"].apply(add_badge)
+
+        def highlight_top_rows(row):
+            if row["Rank"] <= 3:
+                return ["background-color: #d4f7d4"] * len(row)
+            return [""] * len(row)
+
+        st.caption("🟢 Top 3 candidates highlighted based on final score ranking.")
+
+        st.dataframe(
+            df.style.apply(highlight_top_rows, axis=1),
+            use_container_width=True
+        )
+
         style_metric_cards()
 
-        # Chart View
-        st.write("📊 **Visual Comparison**")
-        st.bar_chart(df.set_index("Resume")[["Final Score", "Semantic Similarity", "Keyword Coverage"]])
+        # ===================== CHART =====================
+        st.write("📊 **Final Score Comparison**")
+        st.bar_chart(
+            df.set_index("Resume")[["Final Score"]],
+            use_container_width=True
+        )
 
-        # ===================== RESUME REPORTS =====================
+        # ===================== DETAILS =====================
         st.markdown("### 📘 Detailed Resume Breakdown")
 
         for rep in final_reports:
-            with st.expander(f"📎 {rep['name']} — Score: {rep['final_score']*100:.1f}%"):
+            with st.expander(
+                f"📎 {rep['name']} — Score: {rep['final_score']*100:.1f}%"
+            ):
                 colA, colB = st.columns(2)
-                colA.metric("🧠 Semantic Score", rep["semantic_similarity"]*100)
-                colB.metric("📌 Keyword Coverage", rep["keyword_coverage"]*100)
+                colA.metric(
+                    "🧠 Semantic Similarity",
+                    f"{rep['semantic_similarity']*100:.1f}%"
+                )
+                colB.metric(
+                    "📌 Keyword Coverage",
+                    f"{rep['keyword_coverage']*100:.1f}%"
+                )
 
                 st.write("### ✔ Found Skills")
                 st.success(rep["found_keywords"])
@@ -167,5 +200,10 @@ if st.button("🚀 Run Resume Screening"):
 
         # ===================== DOWNLOAD =====================
         st.markdown("---")
-        st.write("⬇ **Download Ranking Results**")
-        st.download_button("📥 Download CSV", df.to_csv(index=False), "resume_ranking.csv", "text/csv")
+        st.write("⬇ **Download Results**")
+        st.download_button(
+            "📥 Download CSV",
+            df.to_csv(index=False),
+            "resume_ranking.csv",
+            "text/csv"
+        )
