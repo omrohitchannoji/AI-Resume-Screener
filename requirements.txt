@@ -8,3 +8,4 @@ pandas
 pdfminer.six
 rank-bm25
 streamlit-extras
+nltk
